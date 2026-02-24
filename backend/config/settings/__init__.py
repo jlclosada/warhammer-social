@@ -1,14 +1,32 @@
 """
 Django settings for warhammer_portal project.
 Environment-aware configuration: DEV | QA | PROD
-Set ENVIRONMENT in .env to switch between environments.
+
+Usage:
+  Default (.env):           python manage.py runserver
+  QA (.env.qa):             ENV_FILE=.env.qa python manage.py runserver
+  Production (.env.prod):   ENV_FILE=.env.prod python manage.py runserver
 """
 
+import os
 from pathlib import Path
 from datetime import timedelta
-from decouple import config
+from decouple import Config, RepositoryEnv, config as _decouple_config
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+# ═══════════════════════════════════════════
+# LOAD THE CORRECT .env FILE
+# ═══════════════════════════════════════════
+# Priority: ENV_FILE env var → .env (default)
+_env_file = os.environ.get('ENV_FILE', '.env')
+_env_path = BASE_DIR / _env_file
+
+if _env_path.is_file():
+    config = Config(RepositoryEnv(str(_env_path)))
+else:
+    # Fallback to python-decouple defaults
+    config = _decouple_config
 
 # ═══════════════════════════════════════════
 # ENVIRONMENT DETECTION
