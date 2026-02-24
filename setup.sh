@@ -58,8 +58,9 @@ echo ""
 # ──────────────────────────────────────────────
 # 4. Seed data
 # ──────────────────────────────────────────────
-echo "[4/5] Seeding game systems..."
+echo "[4/5] Seeding game systems and achievements..."
 python manage.py seed_game_systems
+python manage.py seed_achievements
 echo ""
 
 # ──────────────────────────────────────────────

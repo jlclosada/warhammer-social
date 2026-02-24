@@ -1,16 +1,25 @@
 """
 Django settings for warhammer_portal project.
-Development configuration.
+Environment-aware configuration: DEV | QA | PROD
+Set ENVIRONMENT in .env to switch between environments.
 """
 
 from pathlib import Path
 from datetime import timedelta
 from decouple import config
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+# ═══════════════════════════════════════════
+# ENVIRONMENT DETECTION
+# ═══════════════════════════════════════════
+ENVIRONMENT = config('ENVIRONMENT', default='dev').lower()  # dev | qa | prod
+assert ENVIRONMENT in ('dev', 'qa', 'prod'), (
+    f"Invalid ENVIRONMENT '{ENVIRONMENT}'. Must be dev, qa, or prod."
+)
 
 SECRET_KEY = config('SECRET_KEY')
-DEBUG = config('DEBUG', default=True, cast=bool)
+DEBUG = config('DEBUG', default=(ENVIRONMENT == 'dev'), cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
 
 INSTALLED_APPS = [
@@ -21,7 +30,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sites',
-    # Local apps (must be before allauth so custom User model migrations exist first)
+    # Local apps
     'apps.users',
     'apps.collections',
     # Third party
@@ -68,7 +77,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# Database - PostgreSQL
+# Database
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -114,7 +123,15 @@ CORS_ALLOWED_ORIGINS = config(
 ).split(',')
 CORS_ALLOW_CREDENTIALS = True
 
-# Django REST Framework
+# ═══════════════════════════════════════════
+# REST FRAMEWORK — varies by environment
+# ═══════════════════════════════════════════
+_THROTTLE_RATES = {
+    'dev':  {'anon': '200/minute', 'user': '500/minute'},
+    'qa':   {'anon': '60/minute',  'user': '200/minute'},
+    'prod': {'anon': '30/minute',  'user': '100/minute'},
+}
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -129,16 +146,22 @@ REST_FRAMEWORK = {
         'rest_framework.throttling.AnonRateThrottle',
         'rest_framework.throttling.UserRateThrottle',
     ],
-    'DEFAULT_THROTTLE_RATES': {
-        'anon': '30/minute',
-        'user': '100/minute',
-    },
+    'DEFAULT_THROTTLE_RATES': _THROTTLE_RATES.get(ENVIRONMENT, _THROTTLE_RATES['dev']),
 }
 
-# Simple JWT
+# ═══════════════════════════════════════════
+# JWT — varies by environment
+# ═══════════════════════════════════════════
+_JWT_CONFIG = {
+    'dev':  {'access': timedelta(hours=2),    'refresh': timedelta(days=30)},
+    'qa':   {'access': timedelta(minutes=30), 'refresh': timedelta(days=7)},
+    'prod': {'access': timedelta(minutes=15), 'refresh': timedelta(days=3)},
+}
+_jwt = _JWT_CONFIG.get(ENVIRONMENT, _JWT_CONFIG['dev'])
+
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ACCESS_TOKEN_LIFETIME': _jwt['access'],
+    'REFRESH_TOKEN_LIFETIME': _jwt['refresh'],
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'UPDATE_LAST_LOGIN': True,
@@ -151,7 +174,7 @@ ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_USERNAME_REQUIRED = False
-ACCOUNT_EMAIL_VERIFICATION = 'none'  # Development - set to 'mandatory' in production
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory' if ENVIRONMENT == 'prod' else 'none'
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
@@ -172,13 +195,30 @@ SWAGGER_SETTINGS = {
     'JSON_EDITOR': True,
 }
 
-# Logging
+# ═══════════════════════════════════════════
+# SECURITY — production only
+# ═══════════════════════════════════════════
+if ENVIRONMENT == 'prod':
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=True, cast=bool)
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
+# ═══════════════════════════════════════════
+# LOGGING — varies by environment
+# ═══════════════════════════════════════════
+_LOG_LEVEL = {'dev': 'DEBUG', 'qa': 'INFO', 'prod': 'WARNING'}
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
         'verbose': {
-            'format': '{levelname} {asctime} {module} {message}',
+            'format': '[{levelname}] {asctime} [{module}] {message}',
             'style': '{',
         },
     },
@@ -190,7 +230,6 @@ LOGGING = {
     },
     'root': {
         'handlers': ['console'],
-        'level': 'INFO',
+        'level': _LOG_LEVEL.get(ENVIRONMENT, 'INFO'),
     },
 }
-

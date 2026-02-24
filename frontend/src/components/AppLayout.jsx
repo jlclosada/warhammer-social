@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { LogOut, LayoutGrid, FolderOpen, Plus, User, BookOpen, Sparkles, Compass, Bell, Trophy } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import UserSearch from './UserSearch';
+import EnvironmentBanner from './EnvironmentBanner';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 
@@ -179,6 +180,7 @@ export default function AppLayout() {
 
       {/* ── Main content ── */}
       <main className="flex-1 lg:overflow-auto relative z-10">
+        <EnvironmentBanner />
         <div className="lg:hidden h-14" />
         <motion.div
           initial={{ opacity: 0, y: 8 }}

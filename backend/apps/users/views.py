@@ -186,3 +186,16 @@ class UserSearchView(APIView):
         return Response(results)
 
 
+class EnvironmentView(APIView):
+    """GET /auth/env/ — Return current environment info."""
+    permission_classes = (permissions.AllowAny,)
+
+    def get(self, request):
+        from django.conf import settings
+        return Response({
+            'environment': getattr(settings, 'ENVIRONMENT', 'unknown'),
+            'debug': settings.DEBUG,
+            'version': '1.0.0',
+        })
+
+

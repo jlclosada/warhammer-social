@@ -4,6 +4,7 @@ import { Eye, EyeOff, ArrowRight, Loader2, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import Aurora from '../components/Aurora';
+import EnvironmentBanner from '../components/EnvironmentBanner';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 
@@ -33,6 +34,11 @@ export default function LoginPage() {
 
   return (
     <div className="relative min-h-screen bg-surface overflow-hidden">
+      {/* Environment indicator */}
+      <div className="fixed top-0 left-0 right-0 z-50">
+        <EnvironmentBanner />
+      </div>
+
       {/* Full-screen Aurora */}
       <div className="absolute inset-0 z-0 opacity-[0.12]">
         <Aurora

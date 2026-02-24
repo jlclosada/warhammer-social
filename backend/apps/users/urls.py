@@ -9,6 +9,7 @@ from .views import (
     LogoutView,
     CheckEmailView,
     UserSearchView,
+    EnvironmentView,
 )
 
 urlpatterns = [
@@ -23,5 +24,8 @@ urlpatterns = [
     path('me/', UserMeView.as_view(), name='user_me'),
     path('me/change-password/', ChangePasswordView.as_view(), name='change_password'),
     path('users/search/', UserSearchView.as_view(), name='user_search'),
+
+    # Environment
+    path('env/', EnvironmentView.as_view(), name='environment'),
 ]
 
