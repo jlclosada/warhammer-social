@@ -22,6 +22,8 @@ postgres_data/
 
 # Env — secrets (never commit)
 backend/.env
+backend/.env.qa
+backend/.env.prod
 frontend/.env
 frontend/.env.development
 frontend/.env.qa
